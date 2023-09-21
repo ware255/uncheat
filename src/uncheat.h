@@ -1,7 +1,11 @@
 #ifndef _UNCHEAT_H_
 #define _UNCHEAT_H_
 
+#include <type_traits>
+#include <cstdio>
+
 #include <windows.h>
+#include <winuser.h>
 #include <winternl.h>
 #include <tlhelp32.h>
 
@@ -16,12 +20,12 @@ struct Make_Indexes<0> { using type = Indexes<>; };
 
 constexpr char time[] = __TIME__;
 constexpr int DTI(char c) { return c - '0'; }
-const int seed = (DTI(time[7]) +
-                 DTI(time[6]) * 10 +
-                 DTI(time[4]) * 60 +
-                 DTI(time[3]) * 600 +
-                 DTI(time[1]) * 3600 +
-                 DTI(time[0]) * 36000) ^ 0x12345678;
+const int seed = ( DTI(time[7])                                              +
+                  (DTI(time[6]) * 10    != 0 ? DTI(time[6]) * 10    : 41   ) +
+                   DTI(time[4]) * 60                                         +
+                   DTI(time[3]) * 600                                        +
+                  (DTI(time[1]) * 3600  != 0 ? DTI(time[1]) * 3600  : 6987 ) +
+                  (DTI(time[0]) * 36000 != 0 ? DTI(time[0]) * 36000 : 65087)) ^ 0x12345678;
 
 template<int N>
 struct MetaRandomGenerator
@@ -61,7 +65,7 @@ struct MetaString<Indexes<I...>, K> {
     : buffer_ {static_cast<char>(K), encrypt(str[I])...} { }
 
     inline const char* decrypt() {
-        for(size_t i = 0; i < sizeof...(I); ++i) buffer_[i + 1] = decrypt(buffer_[i + 1]);
+        for (size_t i = 0; i < sizeof...(I); ++i) buffer_[i + 1] = decrypt(buffer_[i + 1]);
         buffer_[sizeof...(I) + 1] = 0;
         return buffer_ + 1;
     }
@@ -82,31 +86,171 @@ struct MetaRandomChar {
 
 #define uc(str) (MetaString<Make_Indexes<sizeof(str) - 1>::type, MetaRandomChar<__COUNTER__>::value>(str).decrypt())
 
+#define SHA1_SIZE   (40 + 1)
 #define SHA256_SIZE (64 + 1)
 
 #define ROTR(x,n)   ((x >> n | x << (32 -n)))
 #define SHR(x,n)    ((x >> n))
 #define Ch(x,y,z)   ((x & y) ^ (~x & z))
-#define Maj(x,y,z)   ((x & y) ^ (x & z) ^ (y & z))
+#define Maj(x,y,z)  ((x & y) ^ (x & z) ^ (y & z))
 #define SIGMA0(x)   ((ROTR(x,  2) ^ ROTR(x, 13) ^ ROTR(x, 22)))
 #define SIGMA1(x)   ((ROTR(x,  6) ^ ROTR(x, 11) ^ ROTR(x, 25)))
 #define sigma0(x)   ((ROTR(x,  7) ^ ROTR(x, 18) ^  SHR(x,  3)))
 #define sigma1(x)   ((ROTR(x, 17) ^ ROTR(x, 19) ^  SHR(x, 10)))
+#define CircularShift(bits,word) (((word)<<(bits)) | ((word)>>(32-bits)))
 
-typedef struct sha256 {
+#define FLG_HEAP_ENABLE_TAIL_CHECK   0x10
+#define FLG_HEAP_ENABLE_FREE_CHECK   0x20
+#define FLG_HEAP_VALIDATE_PARAMETERS 0x40
+#define NT_GLOBAL_FLAG_DEBUGGED (FLG_HEAP_ENABLE_TAIL_CHECK | FLG_HEAP_ENABLE_FREE_CHECK | FLG_HEAP_VALIDATE_PARAMETERS)
+
+struct sha256 {
     unsigned int state[8];
     unsigned char buffer[64];
     unsigned long long n_bits;
     unsigned char buffer_counter;
-} sha256;
+};
+
+/*
+class SHA1 {
+private:
+    unsigned int f(int t, unsigned int B, unsigned int C, unsigned int D);
+    unsigned int K(int t);
+    void SHA1ProcessBlock(unsigned int *W, unsigned int *H);
+protected:
+    void sha1(const char *src, char dst[]);
+};
+*/
 
 namespace ucl {
 
+using big_int = long long;
+
+class RSA {
+private:
+    big_int randseed, e;
+    big_int u, p, q, l, d;
+protected:
+    big_int random(big_int);
+    big_int sqrt(double);
+    bool isPrime(big_int);
+    big_int exgcd(big_int, big_int);
+    big_int gcd(big_int, big_int);
+    big_int lcm(big_int, big_int);
+    big_int modPow(big_int, big_int, big_int);
+    big_int modinv(const big_int &, const big_int &);
+    big_int crt(big_int &, big_int &, big_int &, big_int &);
+    void PrimeNum();
+    big_int rsa_c(int);
+    int rsa_d(ucl::big_int);
+};
+
+class safe_int : private RSA {
+private:
+    int n, w;
+    big_int t;
+    int mod(int a, int b) { return a % b; }//a - a / b * b; }
+public:
+    explicit safe_int(int num = 0) : n(num), t(rsa_c(num)) {}
+    //int sha1_cmp(int n, int m);
+    int get() { return n; }
+    safe_int &operator+=(const safe_int &r) {
+        w = rsa_d(t); w += r.n; n = w; t = rsa_c(w);
+        return *this;
+    }
+    safe_int &operator+=(int r) {
+        w = rsa_d(t); w += r; n = w; t = rsa_c(w);
+        return *this;
+    }
+    safe_int &operator-=(const safe_int &r) {
+        w = rsa_d(t); w -= r.n; n = w; t = rsa_c(w);
+        return *this;
+    }
+    safe_int &operator-=(int r) {
+        w = rsa_d(t); w -= r; n = w; t = rsa_c(w);
+        return *this;
+    }
+    safe_int &operator*=(const safe_int &r) {
+        w = rsa_d(t); w *= r.n; n = w; t = rsa_c(w);
+        return *this;
+    }
+    safe_int &operator*=(int r) {
+        w = rsa_d(t); w *= r; n = w; t = rsa_c(w);
+        return *this;
+    }
+    safe_int &operator/=(const safe_int &r) {
+        w = rsa_d(t); w /= r.n; n = w; t = rsa_c(w);
+        return *this;
+    }
+    safe_int &operator/=(int r) {
+        w = rsa_d(t); w /= r; n = w; t = rsa_c(w);
+        return *this;
+    }
+    safe_int &operator^=(const safe_int &r) {
+        w = rsa_d(t); w ^= r.n; n = w; t = rsa_c(w);
+        return *this;
+    }
+    safe_int &operator^=(int r) {
+        w = rsa_d(t); w ^= r; n = w; t = rsa_c(w);
+        return *this;
+    }
+    safe_int &operator%=(const safe_int &r) {
+        w = rsa_d(t); w = mod(n, r.n); n = w; t = rsa_c(w);
+        return *this;
+    }
+    safe_int &operator%=(int r) {
+        w = rsa_d(t); w = mod(n, r); n = w; t = rsa_c(w);
+        return *this;
+    }
+    friend safe_int operator+(const safe_int &l, const safe_int &r) { return safe_int(l) += r; }
+    friend safe_int operator+(const safe_int &l, int r) { return safe_int(l) += r; }
+    friend safe_int operator+(int l, const safe_int &r) { return safe_int(l) += r; }
+    friend safe_int operator-(const safe_int &l, const safe_int &r) { return safe_int(l) -= r; }
+    friend safe_int operator-(const safe_int &l, int r) { return safe_int(l) -= r; }
+    friend safe_int operator-(int l, const safe_int &r) { return safe_int(l) -= r; }
+    friend safe_int operator*(const safe_int &l, const safe_int &r) { return safe_int(l) *= r; }
+    friend safe_int operator*(const safe_int &l, int r) { return safe_int(l) *= r; }
+    friend safe_int operator*(int l, const safe_int &r) { return safe_int(l) *= r; }
+    friend safe_int operator/(const safe_int &l, const safe_int &r) { return safe_int(l) /= r; }
+    friend safe_int operator/(const safe_int &l, int r) { return safe_int(l) /= r; }
+    friend safe_int operator/(int l, const safe_int &r) { return safe_int(l) /= r; }
+    friend safe_int operator^(const safe_int &l, const safe_int &r) { return safe_int(l) ^= r; }
+    friend safe_int operator^(const safe_int &l, int r) { return safe_int(l) ^= r; }
+    friend safe_int operator^(int l, const safe_int &r) { return safe_int(l) ^= r; }
+    friend safe_int operator%(const safe_int &l, const safe_int &r) { return safe_int(l) %= r; }
+    friend safe_int operator%(const safe_int &l, int r) { return safe_int(l) %= r; }
+    friend safe_int operator%(int l, const safe_int &r) { return safe_int(l) %= r; }
+    bool operator==(const safe_int &r) const { return n == r.n; }
+    bool operator!=(const safe_int &r) const { return !(*this == r); }
+    bool operator< (const safe_int &r) const { return n < r.n; }
+    bool operator> (const safe_int &r) const { return r < *this; }
+    bool operator<=(const safe_int &r) const { return !(r > *this); }
+    bool operator>=(const safe_int &r) const { return !(r < *this); }
+    friend bool operator==(const safe_int &l, int r) { return safe_int(r) == l; }
+    friend bool operator==(int l, const safe_int &r) { return safe_int(l) == r; }
+    friend bool operator!=(const safe_int &l, int r) { return safe_int(r) != l; }
+    friend bool operator!=(int l, const safe_int &r) { return safe_int(l) != r; }
+    friend bool operator< (const safe_int &l, int r) { return safe_int(r) > l; }
+    friend bool operator< (int l, const safe_int &r) { return safe_int(l) < r; }
+    friend bool operator> (const safe_int &l, int r) { return safe_int(r) < l; }
+    friend bool operator> (int l, const safe_int &r) { return safe_int(l) > r; }
+    friend bool operator<=(const safe_int &l, int r) { return !(safe_int(r) < l); }
+    friend bool operator<=(int l, const safe_int &r) { return !(safe_int(l) > r); }
+    friend bool operator>=(const safe_int &l, int r) { return !(safe_int(r) > l); }
+    friend bool operator>=(int l, const safe_int &r) { return !(safe_int(l) < r); }
+};
+
+
 bool ISDEBUGGERPRESENT();
+void CheckNtGlobalFlag();
 void sha256(const void *src, char *dst);
 
-static inline void anti_debug() {
-    BOOL bDebuggerPresent;
+safe_int rand(int n);
+
+static inline void anti_debug() {//MessageBoxA(NULL, "Debugger Detected", "", MB_OK);
+    void(*pfunc)() = CheckNtGlobalFlag;
+    if (FindWindowA(NULL, "x64dbg") != NULL) ExitProcess(-1);
+    BOOL bDebuggerPresent; pfunc();
     if (TRUE == CheckRemoteDebuggerPresent(GetCurrentProcess(),
     &bDebuggerPresent) && TRUE == bDebuggerPresent) ExitProcess(-1);
     if (IsDebuggerPresent()) ExitProcess(-1);
