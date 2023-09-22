@@ -111,7 +111,6 @@ struct sha256 {
     unsigned char buffer_counter;
 };
 
-/*
 class SHA1 {
 private:
     unsigned int f(int t, unsigned int B, unsigned int C, unsigned int D);
@@ -120,7 +119,6 @@ private:
 protected:
     void sha1(const char *src, char dst[]);
 };
-*/
 
 namespace ucl {
 
@@ -155,51 +153,51 @@ public:
     //int sha1_cmp(int n, int m);
     int get() { return n; }
     safe_int &operator+=(const safe_int &r) {
-        w = rsa_d(t); w += r.n; n = w; t = rsa_c(w);
+        w = rsa_d(t); w += r.n; n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     safe_int &operator+=(int r) {
-        w = rsa_d(t); w += r; n = w; t = rsa_c(w);
+        w = rsa_d(t); w += r; n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     safe_int &operator-=(const safe_int &r) {
-        w = rsa_d(t); w -= r.n; n = w; t = rsa_c(w);
+        w = rsa_d(t); w -= r.n; n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     safe_int &operator-=(int r) {
-        w = rsa_d(t); w -= r; n = w; t = rsa_c(w);
+        w = rsa_d(t); w -= r; n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     safe_int &operator*=(const safe_int &r) {
-        w = rsa_d(t); w *= r.n; n = w; t = rsa_c(w);
+        w = rsa_d(t); w *= r.n; n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     safe_int &operator*=(int r) {
-        w = rsa_d(t); w *= r; n = w; t = rsa_c(w);
+        w = rsa_d(t); w *= r; n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     safe_int &operator/=(const safe_int &r) {
-        w = rsa_d(t); w /= r.n; n = w; t = rsa_c(w);
+        w = rsa_d(t); w /= r.n; n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     safe_int &operator/=(int r) {
-        w = rsa_d(t); w /= r; n = w; t = rsa_c(w);
+        w = rsa_d(t); w /= r; n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     safe_int &operator^=(const safe_int &r) {
-        w = rsa_d(t); w ^= r.n; n = w; t = rsa_c(w);
+        w = rsa_d(t); w ^= r.n; n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     safe_int &operator^=(int r) {
-        w = rsa_d(t); w ^= r; n = w; t = rsa_c(w);
+        w = rsa_d(t); w ^= r; n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     safe_int &operator%=(const safe_int &r) {
-        w = rsa_d(t); w = mod(n, r.n); n = w; t = rsa_c(w);
+        w = rsa_d(t); w = mod(n, r.n); n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     safe_int &operator%=(int r) {
-        w = rsa_d(t); w = mod(n, r); n = w; t = rsa_c(w);
+        w = rsa_d(t); w = mod(n, r); n = w; t = rsa_c(w); w ^= w;
         return *this;
     }
     friend safe_int operator+(const safe_int &l, const safe_int &r) { return safe_int(l) += r; }
