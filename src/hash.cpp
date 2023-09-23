@@ -1,6 +1,5 @@
 #include "uncheat.h"
 
-
 /*
  * hash: sha256
  */
@@ -159,21 +158,21 @@ void ucl::sha256(const void *src, char *dst) {
  * hash: sha1
  */
 
-unsigned int SHA1::f(int t, unsigned int B, unsigned int C, unsigned int D) {
+unsigned int ucl::SHA1::f(int t, unsigned int B, unsigned int C, unsigned int D) {
     if (t < 20) return (B & C) | ((~ B) & D);
     else if (t < 40) return B ^ C ^ D;
     else if (t < 60) return (B & C) | (B & D) | (C & D);
     else return B ^ C ^ D;
 }
 
-unsigned int SHA1::K(int t) {
+unsigned int ucl::SHA1::K(int t) {
     if (t < 20) return 0x5A827999;
     else if (t < 40) return 0x6ED9EBA1;
     else if (t < 60) return 0x8F1BBCDC;
     else return 0xCA62C1D6;
 }
 
-void SHA1::SHA1ProcessBlock(unsigned int *W, unsigned int *H) {
+void ucl::SHA1::SHA1ProcessBlock(unsigned int *W, unsigned int *H) {
     unsigned int A, B, C, D, E, t, TEMP;
 
     for (t = 16; t < 80; t++) W[t] = CircularShift(1, W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]);
@@ -193,7 +192,7 @@ void SHA1::SHA1ProcessBlock(unsigned int *W, unsigned int *H) {
     H[4] += E;
 }
 
-void SHA1::sha1(const char *src, char dst[]) {
+void ucl::SHA1::sha1(const char *src, char dst[]) {
     unsigned char aLastBlock[64] = {0};
     int cnBlock,nLastBlockSize, nIndex, i, j, t;
     unsigned int awBlock[80];

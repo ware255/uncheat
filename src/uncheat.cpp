@@ -1,5 +1,13 @@
 #include "uncheat.h"
+LPCWSTR mes = L"Ты осел.";
+LPCWSTR mez = L"Вы просто идиот.";
 
+void ucl::err() {
+    MessageBoxW(NULL, mez, mes, MB_OK);
+    ExitProcess(-1);
+}
+
+/*
 PVOID GetPEB() {
 #ifdef _WIN64
     return (PVOID)__readgsqword(0x0C * sizeof(PVOID));
@@ -15,7 +23,7 @@ PVOID GetPEB64() {
         BOOL isWow64 = FALSE;
         typedef BOOL(WINAPI *pfnIsWow64Process)(HANDLE hProcess, PBOOL isWow64);
         pfnIsWow64Process fnIsWow64Process = (pfnIsWow64Process)
-            GetProcAddress(GetModuleHandleA(uc("Kernel32.dll")), uc("IsWow64Process"));
+            GetProcAddress(GetModuleHandleA("Kernel32.dll"), "IsWow64Process");
         if (fnIsWow64Process(GetCurrentProcess(), &isWow64)) {
             if (isWow64) {
                 pPeb = (PVOID)__readfsdword(0x0C * sizeof(PVOID));
@@ -37,17 +45,17 @@ void ucl::CheckNtGlobalFlag() {
     offsetNtGlobalFlag = 0x68;
 #endif
     DWORD NtGlobalFlag = *(PDWORD)((PBYTE)pPeb + offsetNtGlobalFlag);
-    if (NtGlobalFlag & NT_GLOBAL_FLAG_DEBUGGED) ExitProcess(-1);
+    if (NtGlobalFlag & NT_GLOBAL_FLAG_DEBUGGED) err();
     if (pPeb64) {
         DWORD NtGlobalFlagWow64 = *(PDWORD)((PBYTE)pPeb64 + 0xBC);
-        if (NtGlobalFlagWow64 & NT_GLOBAL_FLAG_DEBUGGED) ExitProcess(-1);
+        if (NtGlobalFlagWow64 & NT_GLOBAL_FLAG_DEBUGGED) err();
     }
 }
 
 bool ucl::ISDEBUGGERPRESENT() {
-    HMODULE hKernel32 = GetModuleHandleA(uc("kernel32.dll"));
+    HMODULE hKernel32 = GetModuleHandleA("kernel32.dll");
     if (!hKernel32) return false;
-    FARPROC pIsDebuggerPresent = GetProcAddress(hKernel32, uc("IsDebuggerPresent"));
+    FARPROC pIsDebuggerPresent = GetProcAddress(hKernel32, "IsDebuggerPresent");
     if (!pIsDebuggerPresent) return false;
     HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (INVALID_HANDLE_VALUE == hSnapshot) return false;
@@ -75,4 +83,16 @@ bool ucl::ISDEBUGGERPRESENT() {
     } while (Process32NextW(hSnapshot, &ProcessEntry));
     if (hSnapshot) CloseHandle(hSnapshot);
     return bDebuggerPresent;
+}
+*/
+
+void ucl::HardwareDebugRegisters() {
+    CONTEXT ctx = { 0 };
+    HANDLE hThread = GetCurrentThread();
+    ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+    if (GetThreadContext(hThread, &ctx)) {
+        if ((ctx.Dr0 != 0x00) || (ctx.Dr1 != 0x00) || (ctx.Dr2 != 0x00) || (ctx.Dr3 != 0x00) || (ctx.Dr6 != 0x00) || (ctx.Dr7 != 0x00)) {
+            err();
+        }
+    }
 }

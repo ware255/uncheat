@@ -49,11 +49,9 @@ ucl::big_int ucl::RSA::modPow(ucl::big_int a, ucl::big_int k, ucl::big_int x) {
     if (k == 0) return 1 % x;
 
     ucl::big_int value = 1;
-    for(ucl::big_int i = 0; i < k; i++) {
+    for (ucl::big_int i = 0; i < k; i++) {
         value *= a;
-        if(value >= x) {
-            value %= x;
-        }
+        if (value >= x) value %= x;
     }
     return value;
 }
@@ -96,7 +94,7 @@ ucl::big_int ucl::RSA::sqrt(double x) {
 
     do {
         last = s;
-        s = (x / s + s) / 2.0;
+        s = (x / s + s) * 0.5;
     } while (s < last);
 
     return static_cast<int>(last);
@@ -114,7 +112,7 @@ void ucl::RSA::PrimeNum() {
     while (1) {
         p = random(randseed) % MAX_P;
         q = random(randseed) % MAX_P;
-        if (p > 100000 && q > 100000) break;
+        if (p >= 500000 && q >= 500000) break;
     }
     while (1) {
         if (!isPrime(p)) p++;
@@ -136,10 +134,10 @@ ucl::big_int ucl::RSA::rsa_c(int num) {
     PrimeNum();
     u = p * q;
     l = lcm(p-1, q-1);
-    e = 65537;
+    e = 3;
     while (gcd(e, l) != 1) e += 2;
     d = exgcd(e, l);
-    if (d % 2 == 0) d += 1;
+    if (d & 1 == 0) d += 1;
     else if (d < 0) d = -1 * d;
     while ((e * d % l) != 1) d += 2;
     crypto = modPow(num, e, u);

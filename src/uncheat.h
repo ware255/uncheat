@@ -5,9 +5,9 @@
 #include <cstdio>
 
 #include <windows.h>
-#include <winuser.h>
-#include <winternl.h>
-#include <tlhelp32.h>
+//#include <winuser.h>
+//#include <winternl.h>
+//#include <tlhelp32.h>
 
 template<int... I>
 struct Indexes { using type = Indexes<I..., sizeof...(I)>; };
@@ -28,8 +28,7 @@ const int seed = ( DTI(time[7])                                              +
                   (DTI(time[0]) * 36000 != 0 ? DTI(time[0]) * 36000 : 65087)) ^ 0x12345678;
 
 template<int N>
-struct MetaRandomGenerator
-{
+struct MetaRandomGenerator {
 private:
     static constexpr unsigned a = 16807;                        // 7^5
     static constexpr unsigned m = 2147483647;                   // 2^31 - 1
@@ -62,18 +61,18 @@ struct MetaString;
 template<int... I, int K>
 struct MetaString<Indexes<I...>, K> {
     constexpr __forceinline MetaString(const char* str)
-    : buffer_ {static_cast<char>(K), encrypt(str[I])...} { }
+    : buffer_ {static_cast<char>(K), encrypt(str[I], I)...} {}
 
     inline const char* decrypt() {
-        for (size_t i = 0; i < sizeof...(I); ++i) buffer_[i + 1] = decrypt(buffer_[i + 1]);
+        for (size_t i = 0; i < sizeof...(I); ++i) buffer_[i + 1] = decrypt(buffer_[i + 1], static_cast<int>(i));
         buffer_[sizeof...(I) + 1] = 0;
         return buffer_ + 1;
     }
 
 private:
     constexpr char key() const { return buffer_[0]; }
-    constexpr char encrypt(char c) const { return c ^ key(); }
-    constexpr char decrypt(char c) const { return encrypt(c); }
+    constexpr char encrypt(char c, int d) const { return c ^ static_cast<char>(key() + d % (1 + key())); }
+    constexpr char decrypt(char c, int d) const { return encrypt(c, d); }
 
 private:
     char buffer_[sizeof...(I) + 2];
@@ -81,7 +80,7 @@ private:
 
 template<int N>
 struct MetaRandomChar {
-	static const char value = static_cast<char>(1 + MetaRandom<N, 0x7F - 1>::value);
+    static const char value = static_cast<char>(1 + MetaRandom<N, 0x7F - 1>::value);
 };
 
 #define uc(str) (MetaString<Make_Indexes<sizeof(str) - 1>::type, MetaRandomChar<__COUNTER__>::value>(str).decrypt())
@@ -111,18 +110,18 @@ struct sha256 {
     unsigned char buffer_counter;
 };
 
+namespace ucl {
+
+using big_int = long long;
+
 class SHA1 {
 private:
     unsigned int f(int t, unsigned int B, unsigned int C, unsigned int D);
     unsigned int K(int t);
     void SHA1ProcessBlock(unsigned int *W, unsigned int *H);
-protected:
+public:
     void sha1(const char *src, char dst[]);
 };
-
-namespace ucl {
-
-using big_int = long long;
 
 class RSA {
 private:
@@ -150,7 +149,6 @@ private:
     int mod(int a, int b) { return a % b; }//a - a / b * b; }
 public:
     explicit safe_int(int num = 0) : n(num), t(rsa_c(num)) {}
-    //int sha1_cmp(int n, int m);
     int get() { return n; }
     safe_int &operator+=(const safe_int &r) {
         w = rsa_d(t); w += r.n; n = w; t = rsa_c(w); w ^= w;
@@ -238,21 +236,25 @@ public:
     friend bool operator>=(int l, const safe_int &r) { return !(safe_int(l) < r); }
 };
 
-
-bool ISDEBUGGERPRESENT();
-void CheckNtGlobalFlag();
-void sha256(const void *src, char *dst);
-
 safe_int rand(int n);
 
-static inline void anti_debug() {//MessageBoxA(NULL, "Debugger Detected", "", MB_OK);
-    void(*pfunc)() = CheckNtGlobalFlag;
-    if (FindWindowA(NULL, "x64dbg") != NULL) ExitProcess(-1);
-    BOOL bDebuggerPresent; pfunc();
-    if (TRUE == CheckRemoteDebuggerPresent(GetCurrentProcess(),
-    &bDebuggerPresent) && TRUE == bDebuggerPresent) ExitProcess(-1);
-    if (IsDebuggerPresent()) ExitProcess(-1);
-    if (ISDEBUGGERPRESENT()) ExitProcess(-1);
+//bool ISDEBUGGERPRESENT();
+//void CheckNtGlobalFlag();
+void HardwareDebugRegisters();
+void sha256(const void *src, char *dst);
+void err();
+
+static inline void anti_debug() {
+    //void(*pfunc1)() = CheckNtGlobalFlag;
+    //if (FindWindowA(NULL, "x64dbg") != NULL) err();
+    //if (FindWindowA(NULL, "OLLYDBG") != NULL) err();
+    //BOOL bDebuggerPresent; pfunc1();
+    void(*pfunc2)() = HardwareDebugRegisters;
+    /*if (TRUE == CheckRemoteDebuggerPresent(GetCurrentProcess(),
+    &bDebuggerPresent) && TRUE == bDebuggerPresent) err();*/
+    if (IsDebuggerPresent()) err();
+    //if (ISDEBUGGERPRESENT()) err();
+    pfunc2();
 }
 
 }
