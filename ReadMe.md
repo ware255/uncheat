@@ -70,7 +70,6 @@ int main() {
 私はチーター向けに新しくsafe_int型を作りました。safeって名前を付けてますが、安全性は保証しません。あくまでもチート対策向けに作った型です。使い方は下のコードを見たらだいたいわかるでしょう。
 ```cpp
 #include <iostream>
-#include <windows.h>
 #include "uncheat/uncheat.h"
 
 unsigned long randseed = 0x12345678 ^ GetTickCount();
@@ -119,6 +118,7 @@ int main() {
         system("cls");
     }
 
+    std::cin.ignore();
     std::cin.get();
     return 0;
 }
