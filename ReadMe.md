@@ -32,7 +32,8 @@ int main() {
     ucl::anti_debug();
 }
 ```
-使い方は簡単ですね。特にそれといった引数はなければ、戻り値もないです。
+使い方は簡単ですね。特にそれといった引数はなければ、戻り値もないです。<br>
+アンチデバッグの位置は適当な場所（デバックされやすい位置）に関数を置いてみるといいかもしれません。
 
 ### uc関数(マクロ)
 `uc()`はコンパイル時に文字列を難読化してくれます。アルゴリズムはxorやで（）
@@ -48,7 +49,7 @@ int main() {
 
 ### sha256関数
 hashは今のところsha256しかないです。<br>
-戻り値はなし。使い方はucl::sha256(hash化する値, hash化した物を入れる配列)です。<br>
+戻り値はなし。使い方は`ucl::sha256(hash化する値, hash化した物を入れる配列)`です。<br>
 ちなみに、uc()で文字列をxorで暗号化しておくと全く別のhash値が出力されるのでこの場合uc()は使わない方がいいです。<br>
 ```cpp
 #include <iostream>
@@ -125,16 +126,19 @@ int main() {
 safe_intは文字通りintです。long型でもなければdouble型でもないです。<br>
 safe_int型を多用しすぎますと、プログラムの処理が重くなります。理由は、内部でRSA暗号が組み込まれているからです。<br>
 バグなんかありましたら、教えてください。<br><br>
-今後はsafe_int型以外の型も作ろうと考えています。<br>
 
 ## 参考にしたもの
-https://github.com/andrivet/ADVobfuscator/tree/master/DocCode <br>
-https://www.blackhat.com/docs/eu-14/materials/eu-14-Andrivet-C-plus-plus11-Metaprogramming-Applied-To-software-Obfuscation-wp.pdf <br>
-https://www.vx-underground.org/#E:/root/Papers/Windows/Evasion%20-%20Anti-debugging <br>
-https://github.com/983/SHA-256/ <br>
-https://xorbin.com/tools/sha256-hash-calculator <br>
-https://www.youtube.com/watch?v=O1-a5DQxroo <br>
-http://jackseven.s22.xrea.com/programming/sha1.html <br>
-http://www.sha1-online.com/ <br>
-https://cham.space/rsa/ <br>
-https://qiita.com/EqualL2/items/b3c2530c458f8450d390 <br>
+[ADVobfuscator](https://github.com/andrivet/ADVobfuscator/tree/master/DocCode) <br>
+[C++11 metaprogramming
+applied to software obfuscatio](https://www.blackhat.com/docs/eu-14/materials/eu-14-Andrivet-C-plus-plus11-Metaprogramming-Applied-To-software-Obfuscation-wp.pdf) <br>
+[Evasion - Anti-debugging](https://www.vx-underground.org/#E:/root/Papers/Windows/Evasion%20-%20Anti-debugging) <br>
+[SHA-256](https://github.com/983/SHA-256/) <br>
+[SHA-256 hash calculator](https://xorbin.com/tools/sha256-hash-calculator) <br>
+[Unityでのチート対策を簡単かつ高品質に行う為の取り組み](https://www.youtube.com/watch?v=O1-a5DQxroo) <br>
+[SHA-1](http://jackseven.s22.xrea.com/programming/sha1.html) <br>
+[SHA1 and other hash functions online generator](http://www.sha1-online.com/) <br>
+[初学者向け！RSA 暗号の基礎とシミュレーションの実装](https://cham.space/rsa/) <br>
+[素数判定 in C/C++](https://qiita.com/EqualL2/items/b3c2530c458f8450d390) <br>
+[skCrypter](https://github.com/skadro-official/skCrypter) <br>
+[Anti-Debug: Direct debugger interaction](https://anti-debug.checkpoint.com/techniques/interactive.html) <br>
+[AntiDBG](https://github.com/HackOvert/AntiDBG/) <br>
