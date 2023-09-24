@@ -143,3 +143,4 @@ applied to software obfuscatio](https://www.blackhat.com/docs/eu-14/materials/eu
 [Anti-Debug: Direct debugger interaction](https://anti-debug.checkpoint.com/techniques/interactive.html) <br>
 [AntiDBG](https://github.com/HackOvert/AntiDBG/) <br>
 [冪乗法](https://tbasic.org/reference/old/power.html) <br>
+
