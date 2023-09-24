@@ -14,6 +14,8 @@ ucl::big_int ucl::RSA::random(ucl::big_int n) {
         x = y; y = z; z = w;
         w = (w ^ (w >> 19)) ^ (t ^ (t >> 8));
     }
+    if (w < 0) w *= -1;
+    
     return w;
 }
 

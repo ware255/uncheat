@@ -42,18 +42,28 @@ ucl::big_int ucl::RSA::lcm(ucl::big_int a, ucl::big_int b) {
     return a * b / gcd(a, b);
 }
 
+ucl::big_int ucl::RSA::mulmod(ucl::big_int a, ucl::big_int n, ucl::big_int m) {
+    a %= m;
+    if (a < 0) a += m;
+    ucl::big_int mu = 0;
+    while (n >= 1) {
+        if (n & 1 == 1) mu = (a + mu) % m;
+        a = a * 2 % m;
+        n = n / 2;
+    }
+    return mu;
+}
+
 ucl::big_int ucl::RSA::modPow(ucl::big_int a, ucl::big_int k, ucl::big_int x) {
     a %= x;
-
-    if (a == 0 || x == 0) return 0;
-    if (k == 0) return 1 % x;
-
-    ucl::big_int value = 1;
-    for (ucl::big_int i = 0; i < k; i++) {
-        value *= a;
-        if (value >= x) value %= x;
+    if (a < 0) a += x;
+    ucl::big_int pw = 1;
+    while (k >= 1) {
+        if (k & 1 == 1) pw = mulmod(a, pw, x);
+        a = mulmod(a, a, x);
+        k = k / 2;
     }
-    return value;
+    return pw;
 }
 
 ucl::big_int ucl::RSA::modinv(const ucl::big_int &a, const ucl::big_int &m) {
@@ -134,7 +144,7 @@ ucl::big_int ucl::RSA::rsa_c(int num) {
     PrimeNum();
     u = p * q;
     l = lcm(p-1, q-1);
-    e = 3;
+    e = 65537;
     while (gcd(e, l) != 1) e += 2;
     d = exgcd(e, l);
     if (d & 1 == 0) d += 1;

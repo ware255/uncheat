@@ -134,6 +134,7 @@ protected:
     big_int exgcd(big_int, big_int);
     big_int gcd(big_int, big_int);
     big_int lcm(big_int, big_int);
+    big_int mulmod(big_int, big_int, big_int);
     big_int modPow(big_int, big_int, big_int);
     big_int modinv(const big_int &, const big_int &);
     big_int crt(big_int &, big_int &, big_int &, big_int &);
