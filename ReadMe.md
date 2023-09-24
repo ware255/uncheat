@@ -70,6 +70,7 @@ int main() {
 私はチーター向けに新しくsafe_int型を作りました。safeって名前を付けてますが、安全性は保証しません。あくまでもチート対策向けに作った型です。使い方は下のコードを見たらだいたいわかるでしょう。
 ```cpp
 #include <iostream>
+#include <windows.h>
 #include "uncheat/uncheat.h"
 
 unsigned long randseed = 0x12345678 ^ GetTickCount();
@@ -118,13 +119,12 @@ int main() {
         system("cls");
     }
 
-    std::cin.ignore();
     std::cin.get();
     return 0;
 }
 ```
 safe_intは文字通りintです。long型でもなければdouble型でもないです。<br>
-safe_int型を多用しすぎますと、プログラムの処理が重くなります。理由は、内部でRSA暗号が組み込まれているからです。<br>
+safe_int型を多用しすぎますと、プログラムの処理が重くなります。<br>理由は、内部でRSA暗号が組み込まれているからです(なるべく高速に動くように実装したが一応)。<br><br>
 バグなんかありましたら、教えてください。<br><br>
 
 ## 参考にしたもの
@@ -142,3 +142,4 @@ applied to software obfuscatio](https://www.blackhat.com/docs/eu-14/materials/eu
 [skCrypter](https://github.com/skadro-official/skCrypter) <br>
 [Anti-Debug: Direct debugger interaction](https://anti-debug.checkpoint.com/techniques/interactive.html) <br>
 [AntiDBG](https://github.com/HackOvert/AntiDBG/) <br>
+[冪乗法](https://tbasic.org/reference/old/power.html) <br>
