@@ -16,7 +16,7 @@ project
 <br>
 ※コマンドは一例です。
 ```bash
-g++ -o main.exe main.cpp -Iuncheat -L. -static -luncheat -Ofast -s -Wall -Wextra
+g++ -o main.exe main.cpp -Iuncheat -L./uncheat -static -luncheat -Ofast -s -Wall -Wextra
 ```
 コンパイルオプションについてもちゃんと意味はあります。わからないならLet's DuckDuckGo!
 
@@ -124,7 +124,7 @@ int main() {
 }
 ```
 safe_intは文字通りintです。long型でもなければdouble型でもないです。<br>
-safe_int型を多用しすぎますと、プログラムの処理が重くなります。<br>理由は、内部でRSA暗号が組み込まれているからです(なるべく高速に動くように実装したが一応)。<br><br>
+safe_int型を多用しすぎますと、プログラムの処理が重くなります。理由は、内部でRSA暗号が組み込まれているからです。<br>
 バグなんかありましたら、教えてください。<br><br>
 
 ## 参考にしたもの
@@ -143,4 +143,4 @@ applied to software obfuscatio](https://www.blackhat.com/docs/eu-14/materials/eu
 [Anti-Debug: Direct debugger interaction](https://anti-debug.checkpoint.com/techniques/interactive.html) <br>
 [AntiDBG](https://github.com/HackOvert/AntiDBG/) <br>
 [冪乗法](https://tbasic.org/reference/old/power.html) <br>
-
+[「1000000007 で割ったあまり」の求め方を総特集！](https://qiita.com/drken/items/3b4fdf0a78e7a138cd9a) <br>

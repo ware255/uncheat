@@ -1,98 +1,90 @@
 #include "uncheat.h"
-LPCWSTR mes = L"Ты осел.";
-LPCWSTR mez = L"Вы просто идиот.";
+const wchar_t *mes = L"Ты осел.";
+const wchar_t *mez = L"Вы просто идиот.";
+
+void ucl::junk() {
+    int a; a ^= a;
+    int b; b ^= b;
+    a = a > 0 ? 0 : 1;
+    for (; a <= sizeof(long long); b++) a *= 2;
+    b = a * b; a ^= b;
+    if (!(a^a)&0 != 0) goto h;
+    else goto i;
+h:  err();
+i:  return;
+}
+
+unsigned int fnv_1_hash_32(char *string) {
+    constexpr unsigned int FNV_OFFSET_BASIS_32 = 2166136261U;
+    constexpr unsigned int FNV_PRIME_32 = 16777619U;
+    unsigned int hash;
+    size_t len = strnlen_s(string, 50);
+
+    hash = FNV_OFFSET_BASIS_32;
+    for (size_t i = 0 ; i < len ; ++i) hash = (FNV_PRIME_32 * hash) ^ (string[i]);
+
+    return hash;
+}
+
+PDWORD ucl::GetFuncAddressHash(const char *library, DWORD hash) {
+    PDWORD functionAddress = {};
+    HMODULE libraryBase = LoadLibraryA(library);
+
+    PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)libraryBase;
+    PIMAGE_NT_HEADERS imageNTHeaders = (PIMAGE_NT_HEADERS)((DWORD_PTR)libraryBase + dosHeader->e_lfanew);
+    
+    DWORD_PTR exportDirectoryRVA = imageNTHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+    
+    PIMAGE_EXPORT_DIRECTORY imageExportDirectory = (PIMAGE_EXPORT_DIRECTORY)((DWORD_PTR)libraryBase + exportDirectoryRVA);
+
+    PDWORD addresOfFunctionsRVA = (PDWORD)((DWORD_PTR)libraryBase + imageExportDirectory->AddressOfFunctions);
+    PDWORD addressOfNamesRVA = (PDWORD)((DWORD_PTR)libraryBase + imageExportDirectory->AddressOfNames);
+    PWORD addressOfNameOrdinalsRVA = (PWORD)((DWORD_PTR)libraryBase + imageExportDirectory->AddressOfNameOrdinals);
+
+    for (DWORD i = 0; i < imageExportDirectory->NumberOfFunctions; i++) {
+        DWORD functionNameRVA = addressOfNamesRVA[i];
+        DWORD_PTR functionNameVA = (DWORD_PTR)libraryBase + functionNameRVA;
+        char* functionName = (char*)functionNameVA;
+        DWORD_PTR functionAddressRVA = 0;
+
+        DWORD functionNameHash = fnv_1_hash_32(functionName);
+
+        if (functionNameHash == hash) {
+            functionAddressRVA = addresOfFunctionsRVA[i[addressOfNameOrdinalsRVA]];
+            functionAddress = (PDWORD)((DWORD_PTR)libraryBase + functionAddressRVA);
+            return functionAddress;
+        }
+    }
+    return 0;
+}
 
 void ucl::err() {
-    MessageBoxW(NULL, mez, mes, MB_OK);
+    char lib[] = "user32";
+    const char a = GetTickCount() % 0x80;
+    const int b = 0x1c4e3f6c ^ a;
+    for (size_t i{}; i < sizeof(lib); ++i) lib[i] ^= a;
+    for (size_t i{}; i < sizeof(lib); ++i) lib[i] ^= a;
+    ((int(*)(HWND, LPCWSTR, LPCWSTR, UINT))GetFuncAddressHash(lib, b ^ a))(NULL, mez, mes, MB_OK);
     ExitProcess(-1);
 }
 
-/*
-PVOID GetPEB() {
-#ifdef _WIN64
-    return (PVOID)__readgsqword(0x0C * sizeof(PVOID));
-#else
-    return (PVOID)__readfsdword(0x0C * sizeof(PVOID));
-#endif
-}
-
-PVOID GetPEB64() {
-    PVOID pPeb = 0;
-#ifndef _WIN64
-    if (IsWin8OrHigher()) {
-        BOOL isWow64 = FALSE;
-        typedef BOOL(WINAPI *pfnIsWow64Process)(HANDLE hProcess, PBOOL isWow64);
-        pfnIsWow64Process fnIsWow64Process = (pfnIsWow64Process)
-            GetProcAddress(GetModuleHandleA("Kernel32.dll"), "IsWow64Process");
-        if (fnIsWow64Process(GetCurrentProcess(), &isWow64)) {
-            if (isWow64) {
-                pPeb = (PVOID)__readfsdword(0x0C * sizeof(PVOID));
-                pPeb = (PVOID)((PBYTE)pPeb + 0x1000);
-            }
-        }
-    }
-#endif
-    return pPeb;
-}
-
-void ucl::CheckNtGlobalFlag() {
-    PVOID pPeb = GetPEB();
-    PVOID pPeb64 = GetPEB64();
-    DWORD offsetNtGlobalFlag = 0;
-#ifdef _WIN64
-    offsetNtGlobalFlag = 0xBC;
-#else
-    offsetNtGlobalFlag = 0x68;
-#endif
-    DWORD NtGlobalFlag = *(PDWORD)((PBYTE)pPeb + offsetNtGlobalFlag);
-    if (NtGlobalFlag & NT_GLOBAL_FLAG_DEBUGGED) err();
-    if (pPeb64) {
-        DWORD NtGlobalFlagWow64 = *(PDWORD)((PBYTE)pPeb64 + 0xBC);
-        if (NtGlobalFlagWow64 & NT_GLOBAL_FLAG_DEBUGGED) err();
-    }
-}
-
-bool ucl::ISDEBUGGERPRESENT() {
-    HMODULE hKernel32 = GetModuleHandleA("kernel32.dll");
-    if (!hKernel32) return false;
-    FARPROC pIsDebuggerPresent = GetProcAddress(hKernel32, "IsDebuggerPresent");
-    if (!pIsDebuggerPresent) return false;
-    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (INVALID_HANDLE_VALUE == hSnapshot) return false;
-    PROCESSENTRY32W ProcessEntry;
-    ProcessEntry.dwSize = sizeof(PROCESSENTRY32W);
-    if (!Process32FirstW(hSnapshot, &ProcessEntry)) return false;
-    bool bDebuggerPresent = false;
-    HANDLE hProcess = NULL;
-    DWORD dwFuncBytes = 0;
-    const DWORD dwCurrentPID = GetCurrentProcessId();
-    do {
-        try {
-            if (dwCurrentPID == ProcessEntry.th32ProcessID) continue;
-            hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, ProcessEntry.th32ProcessID);
-            if (NULL == hProcess) continue;
-            if (!ReadProcessMemory(hProcess, (LPCVOID)pIsDebuggerPresent, &dwFuncBytes, sizeof(DWORD), NULL)) continue;
-            if (dwFuncBytes != *(PDWORD)pIsDebuggerPresent) {
-                bDebuggerPresent = true;
-                break;
-            }
-        }
-        catch (...) {
-            if (hProcess) CloseHandle(hProcess);
-        }
-    } while (Process32NextW(hSnapshot, &ProcessEntry));
-    if (hSnapshot) CloseHandle(hSnapshot);
-    return bDebuggerPresent;
-}
-*/
-
 void ucl::HardwareDebugRegisters() {
-    CONTEXT ctx = { 0 };
-    HANDLE hThread = GetCurrentThread();
-    ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
-    if (GetThreadContext(hThread, &ctx)) {
-        if ((ctx.Dr0 != 0x00) || (ctx.Dr1 != 0x00) || (ctx.Dr2 != 0x00) || (ctx.Dr3 != 0x00) || (ctx.Dr6 != 0x00) || (ctx.Dr7 != 0x00)) {
-            err();
+    void(*j)() = junk;
+    char lib[] = "kernel32";
+    const char a = GetTickCount() % 0x80;
+    const int b = 0x4faadae6 ^ a;
+    const int c = 0x68eb854c ^ a;
+    for (size_t i{}; i < sizeof(lib); ++i) lib[i] ^= a;
+    CONTEXT ctx = { 0 }; [](){}();
+    for (size_t i{}; i < sizeof(lib); ++i) lib[i] ^= a;
+    HANDLE hThread = ((HANDLE(*)())GetFuncAddressHash(lib, b ^ a))();
+    ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS; j();
+    PDWORD faddress = GetFuncAddressHash(lib, c ^ a);
+    if (((WINBOOL(*)(HANDLE, LPCONTEXT))faddress)(hThread, &ctx)) {
+        if ((ctx.Dr0 != 0x00) || (ctx.Dr1 != 0x00) ||
+            (ctx.Dr2 != 0x00) || (ctx.Dr3 != 0x00) ||
+            (ctx.Dr6 != 0x00) || (ctx.Dr7 != 0x00)) {
+            [](){}; j(); err();
         }
     }
 }

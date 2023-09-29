@@ -1,14 +1,12 @@
 #include "uncheat.h"
 
-#define MAX_P 1000000
-
 ucl::big_int ucl::RSA::exgcd(ucl::big_int a, ucl::big_int b) {
     ucl::big_int x1 = 0, y1 = 1, r1 = b;
     ucl::big_int x2 = 1, y2 = 0, r2 = a;
     ucl::big_int x;
     ucl::big_int qq, rr;
     ucl::big_int xx, yy;
-    
+
     while (1) {
         qq = r1 / r2;
         rr = r1 % r2;
@@ -67,7 +65,7 @@ ucl::big_int ucl::RSA::modPow(ucl::big_int a, ucl::big_int k, ucl::big_int x) {
 }
 
 ucl::big_int ucl::RSA::modinv(const ucl::big_int &a, const ucl::big_int &m) {
-    ucl::big_int j = 1, i = 0, b = m, c = a, x, y;
+    /*ucl::big_int j = 1, i = 0, b = m, c = a, x, y;
     while (c != 0) {
         x = b / c;
         y = b - x*c;
@@ -78,7 +76,8 @@ ucl::big_int ucl::RSA::modinv(const ucl::big_int &a, const ucl::big_int &m) {
         i = y;
     }
     if (i < 0) i += m;
-    return i;
+    return i;*/
+    return modPow(a, m - 2, m);
 }
 
 ucl::big_int ucl::RSA::crt(ucl::big_int &p, ucl::big_int &q, ucl::big_int &c, ucl::big_int &d) {
@@ -119,11 +118,8 @@ bool ucl::RSA::isPrime(ucl::big_int a) {
 void ucl::RSA::PrimeNum() {
     ucl::big_int tmp;
     randseed = 0x12345678 ^ GetTickCount();
-    while (1) {
-        p = random(randseed) % MAX_P;
-        q = random(randseed) % MAX_P;
-        if (p >= 500000 && q >= 500000) break;
-    }
+    p = random(randseed);
+    q = random(randseed+1);
     while (1) {
         if (!isPrime(p)) p++;
         else break;
@@ -149,7 +145,8 @@ ucl::big_int ucl::RSA::rsa_c(int num) {
     d = exgcd(e, l);
     if (d & 1 == 0) d += 1;
     else if (d < 0) d = -1 * d;
-    while ((e * d % l) != 1) d += 2;
+    //(e * d % l) != 1
+    while ((((e % l) * (d % l)) % l) != 1) d += 2;
     crypto = modPow(num, e, u);
     return crypto;
 }

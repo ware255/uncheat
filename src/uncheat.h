@@ -5,9 +5,6 @@
 #include <cstdio>
 
 #include <windows.h>
-//#include <winuser.h>
-//#include <winternl.h>
-//#include <tlhelp32.h>
 
 template<int... I>
 struct Indexes { using type = Indexes<I..., sizeof...(I)>; };
@@ -239,23 +236,20 @@ public:
 
 safe_int rand(int n);
 
-//bool ISDEBUGGERPRESENT();
-//void CheckNtGlobalFlag();
+PDWORD GetFuncAddressHash(const char *library, DWORD hash);
 void HardwareDebugRegisters();
 void sha256(const void *src, char *dst);
 void err();
+void junk();
 
 static inline void anti_debug() {
-    //void(*pfunc1)() = CheckNtGlobalFlag;
-    //if (FindWindowA(NULL, "x64dbg") != NULL) err();
-    //if (FindWindowA(NULL, "OLLYDBG") != NULL) err();
-    //BOOL bDebuggerPresent; pfunc1();
-    void(*pfunc2)() = HardwareDebugRegisters;
-    /*if (TRUE == CheckRemoteDebuggerPresent(GetCurrentProcess(),
-    &bDebuggerPresent) && TRUE == bDebuggerPresent) err();*/
-    if (IsDebuggerPresent()) err();
-    //if (ISDEBUGGERPRESENT()) err();
-    pfunc2();
+    char lib[] = "kernel32";
+    const char a = GetTickCount() % 0x80;
+    for (size_t i{}; i < sizeof(lib); ++i) lib[i] ^= a;
+    void(*pfunc)() = HardwareDebugRegisters;
+    for (size_t i{}; i < sizeof(lib); ++i) lib[i] ^= a;
+    if (((WINBOOL(*)())GetFuncAddressHash(lib, 0x88bfa355))()) err();
+    pfunc();
 }
 
 }
